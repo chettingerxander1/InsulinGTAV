@@ -13,40 +13,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake clang-18 lld-18 curl tar
-          sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
-
-    
-      - name: Build and install GoldHEN SDK
         shell: bash
         run: |
           set -euo pipefail
 
-          SDK_ROOT="$RUNNER_TEMP/OpenOrbisSDK"
-          GH_SDK="$RUNNER_TEMP/GoldHEN_Plugins_SDK"
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            clang-18 \
+            lld-18 \
+            llvm-18 \
+            make \
+            curl \
+            tar
 
-          export OO_PS4_TOOLCHAIN="$SDK_ROOT"
-
-          git clone --depth 1 \
-            https://github.com/GoldHEN/GoldHEN_Plugins_SDK.git \
-            "$GH_SDK"
-          sed -i 's|-Iinclude|-Iinclude -isystem /usr/include/x86_64-linux-gnu|' "$GH_SDK/Makefile"
-          make -C "$GH_SDK"
-
-          mkdir -p "$SDK_ROOT/lib"
-          mkdir -p "$SDK_ROOT/include/GoldHEN"
-
-          cp "$GH_SDK/build/crtprx.o" "$SDK_ROOT/lib/"
-          cp "$GH_SDK/libGoldHEN_Hook.a" "$SDK_ROOT/lib/"
-          cp -a "$GH_SDK/include/." "$SDK_ROOT/include/GoldHEN/"
-
-          echo "GoldHEN SDK installed successfully."
-
-
+          sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
+          sudo ln -sf /usr/bin/llvm-ar-18 /usr/local/bin/llvm-ar
 
       - name: Install OpenOrbis SDK
         shell: bash
@@ -56,32 +40,62 @@ jobs:
           SDK_ROOT="$RUNNER_TEMP/OpenOrbisSDK"
           mkdir -p "$SDK_ROOT"
 
-          SDK_URL=$(curl -fsSL \
-            https://api.github.com/repos/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/latest \
-            | jq -r '[.assets[] | select(.name | endswith(".tar.gz"))][0].browser_download_url // empty')
+          curl -fL \
+            https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.4/toolchain-llvm-18.tar.gz \
+            -o "$RUNNER_TEMP/openorbis-sdk.tar.gz"
 
-          test -n "$SDK_URL"
-
-          curl -fL "$SDK_URL" -o "$RUNNER_TEMP/openorbis-sdk.tar.gz"
-
-          tar -xzf "$RUNNER_TEMP/openorbis-sdk.tar.gz" \
-          --strip-components=2 \
-          -C "$SDK_ROOT"
-
-          echo "Extracting SDK..."
           tar -xzf "$RUNNER_TEMP/openorbis-sdk.tar.gz" \
             --strip-components=2 \
             -C "$SDK_ROOT"
 
           chmod +x -R "$SDK_ROOT/bin"
 
+          test -f "$SDK_ROOT/include/orbis/libkernel.h"
+          test -f "$SDK_ROOT/link.x"
+          test -x "$SDK_ROOT/bin/linux/create-fself"
+          test -x "$SDK_ROOT/bin/linux/readoelf"
+
           echo "OO_PS4_TOOLCHAIN=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "$SDK_ROOT/bin/linux" >> "$GITHUB_PATH"
 
+          echo "OpenOrbis SDK installed and verified."
 
+      - name: Build and install GoldHEN SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SDK_ROOT="$OO_PS4_TOOLCHAIN"
+          GH_SDK="$RUNNER_TEMP/GoldHEN_Plugins_SDK"
+
+          test -f "$SDK_ROOT/include/orbis/libkernel.h"
+
+          git clone --depth 1 \
+            https://github.com/GoldHEN/GoldHEN_Plugins_SDK.git \
+            "$GH_SDK"
+
+          make -C "$GH_SDK"
+
+          mkdir -p "$SDK_ROOT/lib"
+          mkdir -p "$SDK_ROOT/include/GoldHEN"
+
+          cp "$GH_SDK/build/crtprx.o" "$SDK_ROOT/lib/"
+          cp "$GH_SDK/libGoldHEN_Hook.a" "$SDK_ROOT/lib/"
+          cp -a "$GH_SDK/include/." "$SDK_ROOT/include/GoldHEN/"
+
+          test -f "$SDK_ROOT/lib/crtprx.o"
+          test -f "$SDK_ROOT/lib/libGoldHEN_Hook.a"
+          test -f "$SDK_ROOT/include/GoldHEN/GoldHEN.h"
+
+          echo "GoldHEN SDK installed and verified."
 
       - name: Compile plugin
-        run: bash build.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build.sh
+
+          test -f build/InsulinGTAV.prx
 
       - name: Upload plugin
         uses: actions/upload-artifact@v4
