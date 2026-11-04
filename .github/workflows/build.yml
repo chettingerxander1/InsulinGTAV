@@ -34,7 +34,7 @@ jobs:
           git clone --depth 1 \
             https://github.com/GoldHEN/GoldHEN_Plugins_SDK.git \
             "$GH_SDK"
-
+          sed -i 's|-Iinclude|-Iinclude -isystem /usr/include/x86_64-linux-gnu|' "$GH_SDK/Makefile"
           make -C "$GH_SDK"
 
           mkdir -p "$SDK_ROOT/lib"
