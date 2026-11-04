@@ -20,6 +20,31 @@ jobs:
           sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
 
+    
+      - name: Build and install GoldHEN SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SDK_ROOT="$OO_PS4_TOOLCHAIN"
+          GH_SDK="$RUNNER_TEMP/GoldHEN_Plugins_SDK"
+
+          git clone --depth 1 \
+            https://github.com/GoldHEN/GoldHEN_Plugins_SDK.git \
+            "$GH_SDK"
+
+          make -C "$GH_SDK"
+
+          mkdir -p "$SDK_ROOT/lib"
+          mkdir -p "$SDK_ROOT/include/GoldHEN"
+
+          cp "$GH_SDK/build/crtprx.o" "$SDK_ROOT/lib/"
+          cp "$GH_SDK/libGoldHEN_Hook.a" "$SDK_ROOT/lib/"
+          cp -a "$GH_SDK/include/." "$SDK_ROOT/include/GoldHEN/"
+
+          echo "GoldHEN SDK installed successfully."
+
+
 
       - name: Install OpenOrbis SDK
         shell: bash
