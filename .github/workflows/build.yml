@@ -1,0 +1,28 @@
+name: Build InsulinGTAV
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build PS4 plugin
+        uses: OpenOrbis/toolchain-action@main
+        with:
+          version: v0.5.4
+          command: |
+            apt-get update
+            apt-get install -y cmake
+            bash build.sh
+
+      - name: Upload compiled plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: InsulinGTAV
+          path: build/InsulinGTAV.prx
+          if-no-files-found: error
