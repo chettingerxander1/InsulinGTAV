@@ -29,6 +29,8 @@ jobs:
           SDK_ROOT="$RUNNER_TEMP/OpenOrbisSDK"
           GH_SDK="$RUNNER_TEMP/GoldHEN_Plugins_SDK"
 
+          export OO_PS4_TOOLCHAIN="$SDK_ROOT"
+
           git clone --depth 1 \
             https://github.com/GoldHEN/GoldHEN_Plugins_SDK.git \
             "$GH_SDK"
