@@ -20,12 +20,34 @@ jobs:
           sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
 
+     
       - name: Install OpenOrbis SDK
+        shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p "$RUNNER_TEMP/OpenOrbisSDK"
-          curl -fL https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.4/v0.5.4.tar.gz | tar -xz -C "$RUNNER_TEMP/OpenOrbisSDK" bin/data bin/linux include lib scripts LICENSE link.x
+
+          SDK_URL=$(curl -fsSL \
+            https://api.github.com/repos/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/latest \
+            | jq -r '[.assets[] | select(.name | endswith(".tar.gz"))][0].browser_download_url // empty')
+
+          if [ -z "$SDK_URL" ]; then
+            echo "Could not locate the OpenOrbis SDK archive."
+            exit 1
+          fi
+
+          echo "Downloading: $SDK_URL"
+
+          curl -fL "$SDK_URL" -o "$RUNNER_TEMP/openorbis-sdk.tar.gz"
+
+          tar -xz -C "$RUNNER_TEMP/OpenOrbisSDK" \
+            -f "$RUNNER_TEMP/openorbis-sdk.tar.gz" \
+            bin/data bin/linux include lib scripts LICENSE link.x
+
           echo "OO_PS4_TOOLCHAIN=$RUNNER_TEMP/OpenOrbisSDK" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/OpenOrbisSDK/bin/linux" >> "$GITHUB_PATH"
+
 
       - name: Compile plugin
         run: bash build.sh
