@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          SDK_ROOT="$OO_PS4_TOOLCHAIN"
+          SDK_ROOT="$RUNNER_TEMP/OpenOrbisSDK"
           GH_SDK="$RUNNER_TEMP/GoldHEN_Plugins_SDK"
 
           git clone --depth 1 \
