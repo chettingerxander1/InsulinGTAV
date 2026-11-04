@@ -37,8 +37,9 @@ jobs:
 
           curl -fL "$SDK_URL" -o "$RUNNER_TEMP/openorbis-sdk.tar.gz"
 
-          echo "Inspecting archive..."
-          tar -tzf "$RUNNER_TEMP/openorbis-sdk.tar.gz" | head -30
+tar -xzf "$RUNNER_TEMP/openorbis-sdk.tar.gz" \
+  --strip-components=2 \
+  -C "$SDK_ROOT"
 
           echo "Extracting SDK..."
           tar -xzf "$RUNNER_TEMP/openorbis-sdk.tar.gz" \
